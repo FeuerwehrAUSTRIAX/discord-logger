@@ -1,8 +1,8 @@
 const express = require("express");
+const fetch = require("node-fetch");
 const { Client, GatewayIntentBits } = require("discord.js");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// Webserver für Render, damit der Bot aktiv bleibt
+// 🔹 Fake-Webserver für Render (verhindert Shutdown)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,10 +13,10 @@ app.listen(PORT, () => {
   console.log(`🌐 Webserver aktiv auf Port ${PORT}`);
 });
 
-// Google Apps Script Webhook
+// 🔹 Deine Google Apps Script Webhook URL
 const webhookURL = "https://script.google.com/macros/s/AKfycbwAgUGc-2N8Mx2lN23M6O6hlZpt6pXgBopDkSMG6b_nyLoFICc5xOGRx_3V3d58l_3cgQ/exec";
 
-// Discord-Client
+// 🔹 Discord-Bot initialisieren
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -25,14 +25,13 @@ const client = new Client({
   ],
 });
 
-// Bot bereit
 client.once("ready", () => {
   console.log(`✅ Bot online als ${client.user.tag}`);
 });
 
-// Embed-Nachrichten von Bots (z. B. Webhooks) auslesen
+// 🔹 Nur Webhook-/Bot-Nachrichten analysieren
 client.on("messageCreate", async (message) => {
-  if (!message.author.bot) return; // Nur Bot/Webhook-Nachrichten
+  if (!message.author.bot) return; // Nur Webhook-Nachrichten
 
   const embed = message.embeds[0];
   if (!embed) return;
@@ -41,7 +40,6 @@ client.on("messageCreate", async (message) => {
   const titel = embed.title || "";
   const beschreibung = embed.description || "";
 
-  // Felder extrahieren
   let stichwort = "";
   let plz = "";
   let uhrzeit = "";
@@ -71,9 +69,9 @@ client.on("messageCreate", async (message) => {
 
     console.log("📨 Embed-Daten an Google Sheet gesendet");
   } catch (err) {
-    console.error("❌ Fehler beim Senden:", err);
+    console.error("❌ Fehler beim Senden an Google Sheet:", err);
   }
 });
 
-// Bot starten
+// 🔹 Bot starten mit Secret
 client.login(process.env.BOT_TOKEN);
