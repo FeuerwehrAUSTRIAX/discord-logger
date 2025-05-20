@@ -1,21 +1,22 @@
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+// Webserver für Render, damit der Bot aktiv bleibt
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔹 Fake-Webserver für Render (verhindert Timeout)
 app.get("/", (req, res) => {
-  res.send("✅ Bot läuft – alles gut.");
+  res.send("✅ Bot läuft.");
 });
 app.listen(PORT, () => {
-  console.log(`🌐 Fake-Server aktiv auf Port ${PORT}`);
+  console.log(`🌐 Webserver aktiv auf Port ${PORT}`);
 });
 
-// 🔹 Google Apps Script Webhook
+// Google Apps Script Webhook
 const webhookURL = "https://script.google.com/macros/s/AKfycbwAgUGc-2N8Mx2lN23M6O6hlZpt6pXgBopDkSMG6b_nyLoFICc5xOGRx_3V3d58l_3cgQ/exec";
 
-// 🔹 Discord-Bot erstellen
+// Discord-Client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -24,18 +25,41 @@ const client = new Client({
   ],
 });
 
+// Bot bereit
 client.once("ready", () => {
   console.log(`✅ Bot online als ${client.user.tag}`);
 });
 
+// Embed-Nachrichten von Bots (z. B. Webhooks) auslesen
 client.on("messageCreate", async (message) => {
-// Webhook-Nachrichten zulassen, aber eigene ignorieren:
-if (message.author.id === client.user.id) return;
+  if (!message.author.bot) return; // Nur Bot/Webhook-Nachrichten
 
+  const embed = message.embeds[0];
+  if (!embed) return;
+
+  const zeit = new Date().toLocaleString("de-AT");
+  const titel = embed.title || "";
+  const beschreibung = embed.description || "";
+
+  // Felder extrahieren
+  let stichwort = "";
+  let plz = "";
+  let uhrzeit = "";
+
+  embed.fields?.forEach((field) => {
+    const name = field.name.toLowerCase();
+    if (name.includes("stichwort")) stichwort = field.value;
+    else if (name.includes("postleitzahl")) plz = field.value;
+    else if (name.includes("uhrzeit")) uhrzeit = field.value;
+  });
 
   const payload = {
-    username: message.author.username,
-    content: message.content,
+    zeit,
+    titel,
+    beschreibung,
+    stichwort,
+    plz,
+    uhrzeit,
   };
 
   try {
@@ -45,10 +69,11 @@ if (message.author.id === client.user.id) return;
       body: JSON.stringify(payload),
     });
 
-    console.log("📨 Nachricht an Google Sheet gesendet");
+    console.log("📨 Embed-Daten an Google Sheet gesendet");
   } catch (err) {
-    console.error("❌ Fehler beim Senden an Google Sheet:", err);
+    console.error("❌ Fehler beim Senden:", err);
   }
 });
 
+// Bot starten
 client.login(process.env.BOT_TOKEN);
