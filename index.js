@@ -29,7 +29,9 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
+// Webhook-Nachrichten zulassen, aber eigene ignorieren:
+if (message.author.id === client.user.id) return;
+
 
   const payload = {
     username: message.author.username,
