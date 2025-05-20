@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// 🔹 Fake-Webserver für Render
+// Webserver für Render (verhindert Timeout)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,10 +13,10 @@ app.listen(PORT, () => {
   console.log(`🌐 Webserver aktiv auf Port ${PORT}`);
 });
 
-// 🔹 Deine Google Apps Script Webhook URL
+// Google Apps Script Webhook URL
 const webhookURL = "https://script.google.com/macros/s/AKfycbwAgUGc-2N8Mx2lN23M6O6hlZpt6pXgBopDkSMG6b_nyLoFICc5xOGRx_3V3d58l_3cgQ/exec";
 
-// 🔹 Discord-Bot starten
+// Discord Bot einrichten
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -29,35 +29,33 @@ client.once("ready", () => {
   console.log(`✅ Bot online als ${client.user.tag}`);
 });
 
-// 🔹 Nur Webhook-/Bot-Nachrichten analysieren
 client.on("messageCreate", async (message) => {
   if (!message.author.bot) return;
   if (!message.embeds || message.embeds.length === 0) return;
 
-  // Alle Embeds in lesbaren Text umwandeln
-  const embedTexts = message.embeds.map((embed) => {
-    let parts = [];
+  const embed = message.embeds[0];
 
-    if (embed.title) parts.push(`🟥 Titel:\n${embed.title}`);
-    if (embed.description) parts.push(`🟦 Beschreibung:\n${embed.description}`);
+  const zeit = new Date().toLocaleString("de-AT");
+  const titel = embed.title || "";
+  const beschreibung = embed.description || "";
 
-    if (embed.fields && embed.fields.length > 0) {
-      embed.fields.forEach((field) => {
-        parts.push(`🟨 ${field.name}:\n${field.value}`);
-      });
-    }
+  let stichwort = "";
+  let plz = "";
+  const footer = embed.footer?.text || "";
 
-    if (embed.footer?.text) parts.push(`⬜ Footer:\n${embed.footer.text}`);
-    if (embed.author?.name) parts.push(`🟩 Author:\n${embed.author.name}`);
-    if (embed.url) parts.push(`🔗 URL:\n${embed.url}`);
-
-    return parts.join("\n\n");
+  embed.fields?.forEach((field) => {
+    const name = field.name.toLowerCase();
+    if (name.includes("stichwort")) stichwort = field.value;
+    if (name.includes("postleitzahl")) plz = field.value;
   });
 
   const payload = {
-    zeit: new Date().toLocaleString("de-AT"),
-    titel: message.author.username,
-    beschreibung: embedTexts.join("\n\n"),
+    zeit,
+    titel,
+    beschreibung,
+    stichwort,
+    plz,
+    footer
   };
 
   try {
@@ -67,11 +65,10 @@ client.on("messageCreate", async (message) => {
       body: JSON.stringify(payload),
     });
 
-    console.log("📨 Webhook-Embed an Google Sheet gesendet");
+    console.log("📨 Webhook-Daten an Google Sheet gesendet");
   } catch (err) {
     console.error("❌ Fehler beim Senden:", err);
   }
 });
 
-// 🔹 Bot starten mit Secret
 client.login(process.env.BOT_TOKEN);
