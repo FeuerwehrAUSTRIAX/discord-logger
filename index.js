@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const webhookURL = "https://script.google.com/macros/s/DEIN_WEBAPP_URL/exec";
+const webhookURL = "https://script.google.com/macros/s/AKfycbwAgUGc-2N8Mx2lN23M6O6hlZpt6pXgBopDkSMG6b_nyLoFICc5xOGRx_3V3d58l_3cgQ/exec";
+
 
 const client = new Client({
   intents: [
