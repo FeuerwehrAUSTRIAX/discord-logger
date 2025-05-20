@@ -1,14 +1,27 @@
+const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const webhookURL = "https://script.google.com/macros/s/AKfycbwAgUGc-2N8Mx2lN23M6O6hlZpt6pXgBopDkSMG6b_nyLoFICc5xOGRx_3V3d58l_3cgQ/exec";
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+// 🔹 Fake-Webserver für Render (verhindert Timeout)
+app.get("/", (req, res) => {
+  res.send("✅ Bot läuft – alles gut.");
+});
+app.listen(PORT, () => {
+  console.log(`🌐 Fake-Server aktiv auf Port ${PORT}`);
+});
 
+// 🔹 Google Apps Script URL einfügen:
+const webhookURL = "https://script.google.com/macros/s/DEINE_URL/exec";
+
+// 🔹 Discord-Bot erstellen
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 client.once("ready", () => {
@@ -20,16 +33,20 @@ client.on("messageCreate", async (message) => {
 
   const payload = {
     username: message.author.username,
-    content: message.content
+    content: message.content,
   };
 
-  await fetch(webhookURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  try {
+    await fetch(webhookURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  console.log("📨 Nachricht an Google Sheet gesendet");
+    console.log("📨 Nachricht an Google Sheet gesendet");
+  } catch (err) {
+    console.error("❌ Fehler beim Senden an Google Sheet:", err);
+  }
 });
 
 client.login(process.env.BOT_TOKEN);
