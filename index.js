@@ -14,7 +14,7 @@ app.listen(PORT, () => {
 });
 
 // Google Apps Script Webhook URL
-const webhookURL = "https://script.google.com/macros/library/d/1StJtxjwG7sEoKRm7UAgnN89M7ZgRRZjEWCNvsBoOQxzawICJrQJo5esj/3";
+const webhookURL = "https://script.google.com/macros/s/AKfycbzzbak48L3KRW5jlyPmeWH8ARqV0GKALhDjTVSz_srMQUIMrME9IBdzsUUU4fHgpLml2g/exec";
 
 // Discord Bot einrichten
 const client = new Client({
