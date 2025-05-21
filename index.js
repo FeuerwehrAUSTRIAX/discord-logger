@@ -2,10 +2,10 @@ const express = require("express");
 const fetch = require("node-fetch");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// Webserver für Render (verhindert Timeout)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 🔄 Webserver für Render – verhindert Timeout
 app.get("/", (req, res) => {
   res.send("✅ Bot läuft.");
 });
@@ -13,10 +13,10 @@ app.listen(PORT, () => {
   console.log(`🌐 Webserver aktiv auf Port ${PORT}`);
 });
 
-// Google Apps Script Webhook URL
+// 📬 DEINE Google Apps Script Webhook URL:
 const webhookURL = "https://script.google.com/macros/s/AKfycbzzbak48L3KRW5jlyPmeWH8ARqV0GKALhDjTVSz_srMQUIMrME9IBdzsUUU4fHgpLml2g/exec";
 
-// Discord Bot einrichten
+// 🎮 Discord-Bot Setup
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -25,49 +25,61 @@ const client = new Client({
   ],
 });
 
+// ✅ Bot ist online
 client.once("ready", () => {
   console.log(`✅ Bot online als ${client.user.tag}`);
 });
 
+// 📩 Neue Nachrichten verarbeiten
 client.on("messageCreate", async (message) => {
-  if (!message.author.bot) return;
-  if (!message.embeds || message.embeds.length === 0) return;
-
-  const embed = message.embeds[0];
+  // Eigene Nachrichten ignorieren
+  if (message.author.id === client.user.id) return;
 
   const zeit = new Date().toLocaleString("de-AT");
-  const titel = embed.title || "";
-  const beschreibung = embed.description || "";
 
-  let stichwort = "";
-  let plz = "";
-  const footer = embed.footer?.text || "";
+  let titel = "-";
+  let beschreibung = message.content || "-";
+  let stichwort = "-";
+  let plz = "-";
+  let footer = "-";
 
-  embed.fields?.forEach((field) => {
-    const name = field.name.toLowerCase();
-    if (name.includes("stichwort")) stichwort = field.value;
-    if (name.includes("postleitzahl")) plz = field.value;
-  });
+  // 📦 Falls Embed (z. B. Webhook) vorhanden
+  if (message.embeds?.length > 0) {
+    const embed = message.embeds[0];
+
+    titel = embed.title || titel;
+    beschreibung = embed.description || beschreibung;
+    footer = embed.footer?.text || footer;
+
+    embed.fields?.forEach((field) => {
+      const name = (field.name || "").toLowerCase();
+      if (name.includes("stichwort")) stichwort = field.value;
+      if (name.includes("postleitzahl")) plz = field.value;
+    });
+  }
 
   const payload = {
     zeit,
+    username: message.author.username,
     titel,
     beschreibung,
     stichwort,
     plz,
-    footer
+    footer,
   };
 
   try {
-    await fetch(webhookURL, {
+    const res = await fetch(webhookURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    console.log("📨 Webhook-Daten an Google Sheet gesendet");
+    const text = await res.text();
+    console.log("📨 Gesendet an Google Sheet:", text);
   } catch (err) {
-    console.error("❌ Fehler beim Senden:", err);
+    console.error("❌ Fehler beim Senden:", err.message);
+    console.error("📦 Payload nicht übertragen:", payload);
   }
 });
 
