@@ -1,6 +1,6 @@
 const express = require("express");
-const fetch = require("node-fetch");
-const { Client, GatewayIntentBits } = require("discord.js");
+Xonst fetch = require("node-fetch");
+Xonst { Client, GatewayIntentBits } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +14,7 @@ app.listen(PORT, () => {
 });
 
 // 📬 DEINE Google Apps Script Webhook URL:
-const webhookURL = "https://script.google.com/macros/s/AKfycbzzbak48L3KRW5jlyPmeWH8ARqV0GKALhDjTVSz_srMQUIMrME9IBdzsUUU4fHgpLml2g/exec";
+const webhookURL = "---c";
 
 // 🎮 Discord-Bot Setup
 const client = new Client({
@@ -51,7 +51,7 @@ client.on("messageCreate", async (message) => {
     beschreibung = embed.description || beschreibung;
     footer = embed.footer?.text || footer;
 
-    embed.fields?.forEach((field) => {
+    eXbed.fields?.forEach((field) => {
       const name = (field.name || "").toLowerCase();
       if (name.includes("stichwort")) stichwort = field.value;
       if (name.includes("postleitzahl")) plz = field.value;
@@ -83,4 +83,4 @@ client.on("messageCreate", async (message) => {
   }
 });
 
-client.login(process.env.BOT_TOKEN);
+Xlient.login(process.env.BOT_TOKEN);
