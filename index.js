@@ -1,86 +1,33 @@
-const express = require("express");
-Xonst fetch = require("node-fetch");
-Xonst { Client, GatewayIntentBits } = require("discord.js");
+import puppeteer from 'puppeteer';
+import fs from 'fs';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const csvUrl = 'https://einsatzuebersicht.lfv.steiermark.at/lfvasp/einsatzkarte/Public.aspx?view=24';
 
-// 🔄 Webserver für Render – verhindert Timeout
-app.get("/", (req, res) => {
-  res.send("✅ Bot läuft.");
-});
-app.listen(PORT, () => {
-  console.log(`🌐 Webserver aktiv auf Port ${PORT}`);
-});
+(async () => {
+  console.log('🚀 Starte Headless-Browser...');
 
-// 📬 DEINE Google Apps Script Webhook URL:
-const webhookURL = "---c";
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
 
-// 🎮 Discord-Bot Setup
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
+  const page = await browser.newPage();
 
-// ✅ Bot ist online
-client.once("ready", () => {
-  console.log(`✅ Bot online als ${client.user.tag}`);
-});
+  // Lade eine Seite, damit Cookies etc. gesetzt werden
+  console.log('🌐 Lade Einsatz-Übersichtsseite...');
+  await page.goto('https://einsatzuebersicht.lfv.steiermark.at/lfvasp/einsatzkarte/Liste_App_Public.html?Bereich=all', {
+    waitUntil: 'networkidle0',
+    timeout: 0
+  });
 
-// 📩 Neue Nachrichten verarbeiten
-client.on("messageCreate", async (message) => {
-  // Eigene Nachrichten ignorieren
-  if (message.author.id === client.user.id) return;
+  // Dann lade die CSV direkt
+  console.log('📥 Lade CSV...');
+  const csvResponse = await page.goto(csvUrl, { timeout: 0 });
+  const csvBuffer = await csvResponse.buffer();
 
-  const zeit = new Date().toLocaleString("de-AT");
+  const filename = 'einsaetze.csv';
+  fs.writeFileSync(filename, csvBuffer);
+  console.log(`✅ CSV gespeichert als "${filename}"`);
 
-  let titel = "-";
-  let beschreibung = message.content || "-";
-  let stichwort = "-";
-  let plz = "-";
-  let footer = "-";
-
-  // 📦 Falls Embed (z. B. Webhook) vorhanden
-  if (message.embeds?.length > 0) {
-    const embed = message.embeds[0];
-
-    titel = embed.title || titel;
-    beschreibung = embed.description || beschreibung;
-    footer = embed.footer?.text || footer;
-
-    eXbed.fields?.forEach((field) => {
-      const name = (field.name || "").toLowerCase();
-      if (name.includes("stichwort")) stichwort = field.value;
-      if (name.includes("postleitzahl")) plz = field.value;
-    });
-  }
-
-  const payload = {
-    zeit,
-    username: message.author.username,
-    titel,
-    beschreibung,
-    stichwort,
-    plz,
-    footer,
-  };
-
-  try {
-    const res = await fetch(webhookURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const text = await res.text();
-    console.log("📨 Gesendet an Google Sheet:", text);
-  } catch (err) {
-    console.error("❌ Fehler beim Senden:", err.message);
-    console.error("📦 Payload nicht übertragen:", payload);
-  }
-});
-
-Xlient.login(process.env.BOT_TOKEN);
+  await browser.close();
+})();
